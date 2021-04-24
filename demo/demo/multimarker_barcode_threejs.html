@@ -1,0 +1,588 @@
+<html>
+<head>
+<title>ARSYNC</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<style>
+html,body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	text-align: center;
+	overflow-x: hidden;
+}
+canvas{
+	  filter: grayscale(100%);
+  clip-path: circle(233px at center);
+		width: 800px; height: 747px;margin: 12% 0px 0px 0px;
+}
+.portrait canvas {
+	transform-origin: 0 0;
+	transform: rotate(-90deg) translateX(-100%);
+}
+.desktop canvas {
+ 	transform: scale(-1, 1);
+}
+
+tone-play-toggle {
+	margin-bottom: 10px;
+}
+html,body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	text-align: center;
+	overflow-x: hidden;
+}
+.portrait canvas {
+	transform-origin: 0 0;
+	transform: rotate(-90deg) translateX(-100%);
+}
+.desktop canvas {
+	transform: scale(-1, 1);
+}
+#Notes{
+			width: 100%;
+			height: 20px;
+			position: relative;
+			margin-bottom: 10px;
+		}
+		.Note {
+			width: 20%;
+			height: 100%;
+			position: relative;
+			float: left;
+			background-color: Orange;
+			opacity: 0;
+			transition: opacity 0.5s;
+		}
+		.Note.active {
+			opacity: 1;
+			transition-duration: 0.1s;
+		}
+</style>
+</head>
+<body>
+
+
+<script async src="../../build/artoolkit.debug.js"></script>
+<script async src="../js/third_party/three.js/three.min.js"></script>
+<script async src="../../js/artoolkit.api.js"></script>
+<script async src="../../js/artoolkit.three.js"></script>
+<script src="../build/Tone.js"></script>
+<script src="./js/tone-ui.js"></script>
+<script src="./js/components.js"></script>
+	<link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/2.4.3/webcomponents-bundle.js"></script>
+	<link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet"/>
+<!-- <script src="./js/pouchdb-7.2.1.min.js"></script> -->
+
+<script>
+localStorage.setItem("flag_1", "0");
+localStorage.setItem("flag_2", "0");
+localStorage.setItem("flag_3", "0");
+localStorage.setItem("flag_4", "0");
+localStorage.setItem("flag_5", "0");
+localStorage.setItem("flag_6", "0");
+
+function sleep (time) {
+	return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+// create two monophonic synths
+const synthA = new Tone.FMSynth().toDestination();
+const synthB = new Tone.AMSynth().toDestination();
+//play a note every quarter-note
+const loopA = new Tone.Loop(time => {
+	synthA.triggerAttackRelease("C2", "8n", time);
+}, "4n").start(0);
+//play another note every off quarter-note, by starting it "8n"
+const loopB = new Tone.Loop(time => {
+	synthB.triggerAttackRelease("C4", "8n", time);
+}, "4n").start("8n");
+// all loops start until the Transport is started
+
+
+
+const pitchShift = new Tone.PitchShift().toDestination();
+		const player = new Tone.Player("https://tonejs.github.io/audio/berklee/groovin_analogsynth1.mp3").connect(pitchShift);
+		player.loop = true;
+		player.volume.value = -10;
+
+		const toneFFT = new Tone.FFT();
+		pitchShift.connect(toneFFT);
+		fft({
+			parent: document.querySelector("#content"),
+			tone: toneFFT,
+		});
+
+		// bind the interface
+		// document.querySelector("tone-play-toggle").addEventListener("start", () => player.start());
+		// document.querySelector("tone-play-toggle").addEventListener("stop", () => player.stop());
+		// // document.querySelector("tone-play-toggle").addEventListener('start', () => {
+		// 	debugger;
+		// });
+
+window.ARThreeOnLoad = function() {
+	ARController.getUserMediaThreeScene({
+		maxARVideoSize: 1080,
+		cameraParam: '../Data/camera_para-iPhone 5 rear 640x480 1.0m.dat',
+		onSuccess: function(arScene, arController, arCamera) {
+			if( arController !== null ){
+				// with the listener we listen the incoming messages
+			arController.addEventListener('getMarker', function(ev) {
+					// you will see in the console the pos of the marker
+					if (ev.data.marker.id  == 1 ) {
+						if (localStorage.getItem("flag_1")=="0"){
+							console.log(localStorage.getItem("flag_1"));
+							Tone.Transport.start();
+							localStorage.setItem("flag_1", "1");
+						}
+
+					// temp = ev.data.marker.pos[1];
+				}else if(ev.data.marker.id  == 2){
+					// create two monophonic synths
+					// all loops start until the Transport is started
+					// console.log('marker pos Four: ', ev.data.marker.pos);
+					console.log("2");
+					pitchShift.pitch = parseFloat(Math.round(ev.data.marker.pos[1]-200 ));
+			console.log(pitchShift.pitch);
+					localStorage.setItem("pos", pitchShift.pitch);
+
+						if (localStorage.getItem("flag_2")=="0"){
+							if (pitchShift.pitch>200){
+								player.volume.value = -30;
+
+												const synth = new Tone.Synth({
+											oscillator: {
+												type: "fmsine4",
+												modulationType: "square"
+											}
+										}).toDestination();
+
+										const loop = new Tone.Pattern(((time, note) => {
+											synth.triggerAttackRelease(note, "16n", time);
+
+											// Draw.schedule takes a callback and a time to invoke the callback
+											Tone.Draw.schedule(() => {
+												// the callback synced to the animation frame at the given time
+												const noteElement = document.querySelector("#"+note);
+												noteElement.classList.add("active");
+												setTimeout(() => {
+													noteElement.classList.remove("active");
+												}, 100);
+											}, time);
+										}), ["C4", "E4", "G4", "B4", "D5"]).start(0);
+
+										loop.interval = "16n";
+
+										drawer().add({
+											tone: synth,
+											title: "Piano",
+										});
+										synth.volume.value = -10;
+
+										Tone.Transport.start();
+
+											localStorage.setItem("flag_2", "1");
+}
+
+}
+
+						}
+						else if(ev.data.marker.id  == 3) {
+
+								if (localStorage.getItem("flag_3")=="0"){
+									player.start();
+									console.log("3");
+									localStorage.setItem("flag_3", "1");
+
+								}}
+
+
+						else if(ev.data.marker.id  == 4) {
+							if (localStorage.getItem("flag_4")=="0"){
+							const synthC = new Tone.FMSynth().toDestination();
+							const synthD = new Tone.AMSynth().toDestination();
+							//play a note every quarter-note
+							const loopC = new Tone.Loop(time => {
+								synthC.triggerAttackRelease("G2", "8n", time);
+							}, "2n").start(0);
+							//play another note every off quarter-note, by starting it "8n"
+							const loopD = new Tone.Loop(time => {
+								synthD.triggerAttackRelease("G4", "8n", time);
+							}, "2n").start("8n");
+
+							const synth = new Tone.MembraneSynth().toMaster();
+
+							const loop = new Tone.Loop((time) => {
+								synth.triggerAttackRelease("C2");
+								console.log(time);
+							}, "2n").start(0);
+							// Tone.Transport.start();
+  // function playSynth_kick(){
+  //   synth.triggerAttackRelease("C2", "8n");
+  // }
+  // /** Play Controls **/
+	// playSynth_kick();
+
+
+							Tone.Transport.start();
+							localStorage.setItem("flag_4", "1");
+
+						}}
+						else if(ev.data.marker.id  == 5) {
+
+							if (localStorage.getItem("flag_5")=="0"){
+								console.log(localStorage.getItem("flag_5"));
+								Tone.Transport.start();
+								localStorage.setItem("flag_5", "1");
+								// create an autopanner and start it
+								const synthE = new Tone.FMSynth().toDestination();
+								const synthF = new Tone.AMSynth().toDestination();
+								//play a note every quarter-note
+								const loopE = new Tone.Loop(time => {
+									synthE.triggerAttackRelease("D3", "8n", time);
+								}, "4n").start(0);
+								//play another note every off quarter-note, by starting it "8n"
+								const loopF = new Tone.Loop(time => {
+									synthF.triggerAttackRelease("G3", "8n", time);
+								}, "4n").start("8n");
+								synthE.volume.value = -3;
+								synthF.volume.value = -3;
+								const synth = new Tone.Synth().toDestination();
+								const seq = new Tone.Sequence((time, note) => {
+									synth.triggerAttackRelease(note, 0.1, time);
+									// subdivisions are given as subarrays
+								}, ["C4", ["E4", "D4", "E4"], "G4", ["A4", "G4"]]).start(0);
+								Tone.Transport.start();
+								localStorage.setItem("flag_5", "1");
+								console.log("5");
+							}
+
+						}
+
+							else if(ev.data.marker.id  == 6) {
+	if (localStorage.getItem("flag_6")=="0"){
+		Tone.Transport.stop();
+
+								new p5((p5) => {
+
+								p5.setup = () => {
+								// create a canvas width and height of the screen
+								// document.querySelector('canvas')
+								p5.createCanvas(600, 600);
+								// no fill
+								p5.fill(255);
+								p5.strokeWeight(1);
+								p5.rectMode(p5.CENTER);
+								};
+
+								let phase = 0;
+
+								p5.draw = () => {
+								p5.background(255);
+								p5.stroke(0);
+								// drawing the kick wave at the bottom
+								// it is composed of a simple sine wave that
+								// changes in height with the kick envelope
+								for (let i = 0; i < p5.width; i++) {
+								// scaling kickEnvelope value by 200
+								// since default is 0-1
+								const kickValue = kickEnvelope.value * 200;
+								// multiplying this value to scale the sine wave
+								// depending on x position
+								const yDot = Math.sin((i / 60) + phase) * kickValue;
+								p5.point(i, p5.height -150 + yDot);
+								}
+								// increasing phase means that the kick wave will
+								// not be standing and looks more dynamic
+								phase += 1;
+								// updating circle and square positions with
+								// bass envelop visualizer
+								const bassRadius = p5.height * bassEnvelope.value;
+								p5.stroke("red");
+								const bassX = p5.noise(p5.millis() / 1000) * p5.width;
+								const bassY = p5.noise(phase / 100) * p5.height;
+								p5.ellipse(bassX, bassY, bassRadius, bassRadius);
+
+								// beep envelope viz
+								const beepX = p5.noise(p5.millis() / 500) * p5.width;
+								const beepY = p5.noise(phase / 50) * p5.height;
+								const beepSize = p5.height * bleepEnvelope.value;
+								p5.stroke("green");
+								p5.rect(beepX, beepY, beepSize, beepSize);
+								};
+								}, document.querySelector("#content"));
+
+								// filtering the hi-hats a bit
+								// to make them sound nicer
+								const lowPass = new Tone.Filter({
+								frequency: 14000,
+								}).toDestination();
+
+								// we can make our own hi hats with
+								// the noise synth and a sharp filter envelope
+								const openHiHat = new Tone.NoiseSynth({
+								volume: -10,
+								envelope: {
+								attack: 0.01,
+								decay: 0.3
+								},
+								}).connect(lowPass);
+
+								const openHiHatPart = new Tone.Part(((time) => {
+								openHiHat.triggerAttack(time);
+								}), [{ "8n": 2 }, { "8n": 6 }]).start(0);
+
+								const closedHiHat = new Tone.NoiseSynth({
+								volume: -10,
+								envelope: {
+								attack: 0.01,
+								decay: 0.15
+								},
+								}).connect(lowPass);
+
+								const closedHatPart = new Tone.Part(((time) => {
+								closedHiHat.triggerAttack(time);
+								}), [0, { "16n": 1 }, { "8n": 1 }, { "8n": 3 }, { "8n": 4 }, { "8n": 5 }, { "8n": 7 }, { "8n": 8 }]).start(0);
+
+								// BASS
+								const bassEnvelope = new Tone.AmplitudeEnvelope({
+								attack: 0.01,
+								decay: 0.2,
+								sustain: 0,
+								}).toDestination();
+
+								const bassFilter = new Tone.Filter({
+								frequency: 600,
+								Q: 8
+								});
+
+								const bass = new Tone.PulseOscillator("A2", 0.4).chain(bassFilter, bassEnvelope);
+								bass.start();
+
+								const bassPart = new Tone.Part(((time, note) => {
+								bass.frequency.setValueAtTime(note, time);
+								bassEnvelope.triggerAttack(time);
+								}), [["0:0", "A1"],
+								["0:2", "G1"],
+								["0:2:2", "C2"],
+								["0:3:2", "A1"]]).start(0);
+
+								// BLEEP
+								const bleepEnvelope = new Tone.AmplitudeEnvelope({
+								attack: 0.01,
+								decay: 0.4,
+								sustain: 0,
+								}).toDestination();
+
+								const bleep = new Tone.Oscillator("A4").connect(bleepEnvelope);
+								bleep.start();
+
+								const bleepLoop = new Tone.Loop(((time) => {
+								bleepEnvelope.triggerAttack(time);
+								}), "2n").start(0);
+
+								// KICK
+								const kickEnvelope = new Tone.AmplitudeEnvelope({
+								attack: 0.01,
+								decay: 0.2,
+								sustain: 0,
+								}).toDestination();
+
+								const kick = new Tone.Oscillator("A2").connect(kickEnvelope).start();
+
+								const kickSnapEnv = new Tone.FrequencyEnvelope({
+								attack: 0.005,
+								decay: 0.01,
+								sustain: 0,
+								baseFrequency: "A2",
+								octaves: 2.7
+								}).connect(kick.frequency);
+
+								const kickPart = new Tone.Part(((time) => {
+								kickEnvelope.triggerAttack(time);
+								kickSnapEnv.triggerAttack(time);
+								}), ["0", "0:0:3", "0:2:0", "0:3:1"]).start(0);
+
+								// TRANSPORT
+								Tone.Transport.loopStart = 0;
+								Tone.Transport.loopEnd = "1:0";
+								Tone.Transport.loop = true;
+
+								// bind the interface
+								// document.querySelector("tone-play-toggle").addEventListener("start", e => Tone.Transport.start());
+								// document.querySelector("tone-play-toggle").addEventListener("stop", e => Tone.Transport.stop());
+
+								const controls = drawer({
+								parent: document.body,
+								open: false,
+								});
+
+								controls.folder({
+								name: "Hihat"
+								}).add({
+								tone: lowPass,
+								}).add({
+								name: "Open Hihat",
+								tone: openHiHat,
+								}).add({
+								name: "Closed Hihat",
+								tone: closedHiHat
+								});
+
+								controls.folder({
+								name: "Bass"
+								}).add({
+								tone: bassFilter,
+								}).add({
+								tone: bass,
+								}).add({
+								tone: bassEnvelope
+								});
+
+								controls.folder({
+								name: "Bleep"
+								}).add({
+								tone: bleep,
+								}).add({
+								tone: bleepEnvelope,
+								});
+
+								controls.folder({
+								name: "Kick"
+								}).add({
+								tone: kick,
+								}).add({
+								tone: kickEnvelope,
+								}).add({
+								tone: kickSnapEnv,
+								});
+								Tone.Transport.start();
+								localStorage.setItem("flag_6", "1");
+							}
+}
+
+				});
+			}
+
+
+
+			document.body.className = arController.orientation;
+			arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_MONO_AND_MATRIX);
+			var renderer = new THREE.WebGLRenderer({antialias: true});
+			if (arController.orientation === 'portrait') {
+				var w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
+				var h = window.innerWidth;
+				renderer.setSize(w, h);
+				renderer.domElement.style.paddingBottom = (w-h) + 'px';
+			} else {
+				if (/Android|mobile|iPad|iPhone/i.test(navigator.userAgent)) {
+					renderer.setSize(window.innerWidth, (window.innerWidth / arController.videoWidth) * arController.videoHeight);
+				} else {
+					renderer.setSize(arController.videoWidth, arController.videoHeight);
+					document.body.className += ' desktop';
+				}
+			}
+
+				document.body.insertBefore(renderer.domElement, document.body.firstChild);
+				var pos = 0;
+				var rotationV = 0;
+				var rotationTarget = 0;
+				renderer.domElement.addEventListener('click', function(ev) {
+					ev.preventDefault();
+					rotationTarget += 1;
+				}, false);
+
+				// Create a couple of lights for our AR scene.
+				var light = new THREE.PointLight(0xffffff);
+				light.position.set(400, 400, 400);
+				arScene.scene.add(light);
+				var light = new THREE.PointLight(0xff8800);
+				light.position.set(-400, -200, -300);
+				arScene.scene.add(light);
+
+				const loader = new THREE.TextureLoader();
+				const texture = loader.load( 'mask.jpg' );
+				const geometry = new THREE.PlaneGeometry();
+				const material = new THREE.MeshBasicMaterial( { alphaMap: texture, alphaTest: 0.5 } );
+				const mesh = new THREE.Mesh( geometry, material );
+				arScene.scene.add(mesh);
+
+
+
+
+				arController.loadMultiMarker('../Data/multi-barcode-4x3.dat', function(marker, markerNum) {
+					window.onclick = function() {
+						arScene.video.play();
+					};
+
+					var greenCube = new THREE.Mesh( new THREE.BoxGeometry(40,40,40), new THREE.MeshLambertMaterial({ color: 0xffff11 }) );
+					greenCube.position.y = 70;
+					greenCube.position.z = 0.5;
+
+									// Create an object that tracks the marker transform.
+									var markerRoot = arController.createThreeMultiMarker(marker);
+									arScene.scene.add(markerRoot);
+									// markerRoot.add(greenCube);
+									markerRoot.markers[1] = greenCube;
+									markerRoot.add(markerRoot.markers[1]);
+
+
+
+
+
+
+				function sleep (time) {
+				  return new Promise((resolve) => setTimeout(resolve, time));
+				}
+
+				var tick = function() {
+
+					sleep(100).then(() => {
+						requestAnimationFrame(tick);
+						rotationV += data ;
+						greenCube.rotation.z += localStorage.getItem("pos")-50;
+						if (greenCube.rotation.z>100){
+							greenCube.rotation.z = 0;
+						}
+						// console.log(localStorage.getItem("pos"));
+						rotationV *= 0.85;
+						arScene.process();
+						arScene.renderOn(renderer);
+	});
+
+				};
+
+					tick();
+
+			});
+		}
+	});
+
+	delete window.ARThreeOnLoad;
+
+};
+
+if (window.ARController && ARController.getUserMediaThreeScene) {
+	ARThreeOnLoad();
+}
+</script>
+<tone-example label="Synchronizing Visuals">
+		<div id="content">
+			<div id="Notes">
+				<div id="C4" class="Note"></div>
+				<div id="E4" class="Note"></div>
+				<div id="G4" class="Note"></div>
+				<div id="B4" class="Note"></div>
+				<div id="D5" class="Note"></div>
+			</div>
+			<!-- <tone-play-toggle></tone-play-toggle> -->
+		</div>
+	</tone-example>
+
+
+</div>
+</body>
+</html>
